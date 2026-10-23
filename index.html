@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Council (Simple)</title>
 
 <style>
-  :root {
+  
+  :root { //store once use everywhere
     --paper: #F2F0E9;
     --ink: #000000;
     --white: #FFFFFF;
@@ -22,11 +23,11 @@
     }
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; } //box model concept
 
   html, body { height: 100%; }
   body {
-    background: var(--paper);
+    background: var(--paper); //all variables store the squad and page elements 
     color: var(--ink);
     font-family: Arial, Helvetica, sans-serif;
     display: flex;
@@ -51,8 +52,8 @@
     border-bottom: 4px solid var(--ink);
     padding: 14px 16px;
   }
-  .header h1 { font-size: 1.8rem; font-weight: 900; }
-  .header p { font-size: 0.85rem; margin-top: 4px; }
+  .header h1 { font-size: 1.8rem; font-weight: 900; } //heading text 
+  .header p { font-size: 0.85rem; margin-top: 4px; } //intro text
 
   .squad {
     display: flex;
@@ -72,14 +73,14 @@
   }
   .member .emoji { display: block; font-size: 1.6rem; }
 
-  .slot0 { background: var(--c1); }
+  .slot0 { background: var(--c1); } //.slot classes adds one colour per member
   .slot1 { background: var(--c2); color: var(--white); }
   .slot2 { background: var(--c3); }
   .slot3 { background: var(--c4); }
 
   .chat {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: auto; //makes only the chat area scrollable
     padding: 14px;
     display: flex;
     flex-direction: column;
@@ -89,7 +90,8 @@
 
   .msg { max-width: 85%; }
   .msg .name { font-size: 0.75rem; font-weight: bold; margin-bottom: 3px; }
-  .bubble {
+  .bubble //.bubble is a selector which picks which elements to style 
+  { 
     border: 3px solid var(--ink);
     box-shadow: 4px 4px 0 var(--ink);
     padding: 10px 12px;
@@ -127,22 +129,22 @@
     cursor: pointer;
     color: var(--ink);
   }
-  button:active { transform: translate(3px, 3px); box-shadow: none; }
+  button:active { transform: translate(3px, 3px); box-shadow: none; } //pseudo class concept
   #sendBtn { background: var(--c3); }
   #randomBtn { background: var(--c4); }
-  button:disabled { background: #ccc; cursor: not-allowed; }
+  button:disabled { background: #ccc; cursor: not-allowed; } //pseudo class concept
 </style>
 </head>
 
 <body>
-  <div class="app">
+  <div class="app"> 
 
     <div class="header">
       <h1>🏛️ THE COUNCIL</h1>
       <p>Ask one question. Four characters reply. None of them agree.</p>
     </div>
 
-    <div class="squad" id="squad"></div>
+    <div class="squad" id="squad"></div> //id lets js find & class lets css style 
 
     <div class="chat" id="chat">
       <p class="hint" id="hint">Type a question below and press Send.</p>
@@ -150,7 +152,7 @@
 
     <div class="controls">
       <div class="row">
-        <input type="text" id="questionInput" placeholder="Should I quit my job?">
+        <input type="text" id="questionInput" placeholder="Should I quit my job?"> //text box
         <button id="sendBtn">Send</button>
       </div>
       <button id="randomBtn">🎲 Randomize the squad</button>
@@ -160,7 +162,7 @@
 
 <script>
  
-  var roster = [
+  var roster = [ //array of objects
     { name: "Socrates", emoji: "🏺", replies: [
       "But what do you mean by \"{q}\", my friend?",
       "Why do you ask \"{q}\"? And why do you think you do not already know?",
@@ -213,7 +215,7 @@
 
   var squad = [];
 
-  var squadBox = document.getElementById("squad");
+  var squadBox = document.getElementById("squad"); //find html by id so javascript can change it
   var chatBox = document.getElementById("chat");
   var hint = document.getElementById("hint");
   var input = document.getElementById("questionInput");
@@ -222,7 +224,7 @@
 
 
   function randomNumber(max) {
-    return Math.floor(Math.random() * max);
+    return Math.floor(Math.random() * max); //turns a random decimeal into a whole number
   }
 
   function pickOne(list) {
@@ -230,7 +232,7 @@
   }
 
   function chooseSquad() {
-    var copy = roster.slice();       
+    var copy = roster.slice();        //slice() copies an array, (spice) removes it so nobody is picked twice 
     var chosen = [];
     for (var i = 0; i < 4; i++) {
       var index = randomNumber(copy.length);
@@ -243,8 +245,8 @@
   function showSquad() {
     squadBox.innerHTML = "";         // clear the old squad
     for (var i = 0; i < squad.length; i++) {
-      var card = document.createElement("div");
-      card.className = "member slot" + i;
+      var card = document.createElement("div"); //create element builds new bubbles in code and adds it to the page 
+      card.className = "member slot" + i; 
       card.innerHTML = '<span class="emoji">' + squad[i].emoji + "</span>" + squad[i].name;
       squadBox.appendChild(card);
     }
@@ -285,7 +287,7 @@
     sendBtn.disabled = true;
 
     for (let i = 0; i < squad.length; i++) {
-      setTimeout(function () {
+      setTimeout(function () { //delays each reply by 1 second to feel like a live chat 
         var member = squad[i];
         var reply = pickOne(member.replies);
         reply = reply.replace(/\{q\}/g, shortQuestion);
@@ -298,7 +300,7 @@
     }
   }
 
-  function randomizeSquad() {
+  function randomizeSquad() { //runs once at the start so a squad shows up when the page opens 
     squad = chooseSquad();
     showSquad();
   }
