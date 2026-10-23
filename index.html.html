@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Council (Simple)</title>
+
+<!-- ============================================================
+     PART 1: CSS  (how it looks)
+     ============================================================ -->
+<style>
+  :root {
+    --paper: #F2F0E9;
+    --ink: #000000;
+    --white: #FFFFFF;
+    --c1: #FF3B00;
+    --c2: #0038FF;
+    --c3: #00E05A;
+    --c4: #FFD600;
+    --ink-text: #000000;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      /* page stays light on purpose: the bubbles are the colourful part */
+      --paper: #F2F0E9;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* The whole app is one column: header, squad, chat, input */
+  .app {
+    width: 100%;
+    max-width: 700px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-left: 4px solid var(--ink);
+    border-right: 4px solid var(--ink);
+    background: var(--paper);
+  }
+
+  /* Header */
+  .header {
+    background: var(--c4);
+    border-bottom: 4px solid var(--ink);
+    padding: 14px 16px;
+  }
+  .header h1 { font-size: 1.8rem; font-weight: 900; }
+  .header p { font-size: 0.85rem; margin-top: 4px; }
+
+  /* Squad bar: the four members */
+  .squad {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-bottom: 4px solid var(--ink);
+    background: var(--white);
+  }
+  .member {
+    flex: 1;
+    border: 3px solid var(--ink);
+    padding: 6px 2px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    min-width: 0;
+  }
+  .member .emoji { display: block; font-size: 1.6rem; }
+
+  /* Each slot gets its own colour */
+  .slot0 { background: var(--c1); }
+  .slot1 { background: var(--c2); color: var(--white); }
+  .slot2 { background: var(--c3); }
+  .slot3 { background: var(--c4); }
+
+  /* Chat area scrolls when there are many messages */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .hint { text-align: center; color: #555; margin-top: 20px; }
+
+  .msg { max-width: 85%; }
+  .msg .name { font-size: 0.75rem; font-weight: bold; margin-bottom: 3px; }
+  .bubble {
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 10px 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .msg.me { align-self: flex-end; }
+  .msg.me .bubble { background: var(--white); }
+  .msg.me .name { text-align: right; }
+
+  /* Controls at the bottom */
+  .controls {
+    border-top: 4px solid var(--ink);
+    background: var(--white);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .row { display: flex; gap: 8px; }
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 3px solid var(--ink);
+    padding: 10px;
+    font-size: 1rem;
+    background: var(--white);
+    color: var(--ink);
+  }
+  button {
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    padding: 10px 14px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  button:active { transform: translate(3px, 3px); box-shadow: none; }
+  #sendBtn { background: var(--c3); }
+  #randomBtn { background: var(--c4); }
+  button:disabled { background: #ccc; cursor: not-allowed; }
+</style>
+</head>
+
+<!-- ============================================================
+     PART 2: HTML  (what is on the page)
+     ============================================================ -->
+<body>
+  <div class="app">
+
+    <div class="header">
+      <h1>🏛️ THE COUNCIL</h1>
+      <p>Ask one question. Four characters reply. None of them agree.</p>
+    </div>
+
+    <!-- JavaScript fills this box with the 4 chosen members -->
+    <div class="squad" id="squad"></div>
+
+    <!-- JavaScript adds chat bubbles in here -->
+    <div class="chat" id="chat">
+      <p class="hint" id="hint">Type a question below and press Send.</p>
+    </div>
+
+    <div class="controls">
+      <div class="row">
+        <input type="text" id="questionInput" placeholder="Should I quit my job?">
+        <button id="sendBtn">Send</button>
+      </div>
+      <button id="randomBtn">🎲 Randomize the squad</button>
+    </div>
+
+  </div>
+
+<!-- ============================================================
+     PART 3: JAVASCRIPT  (what it does)
+     ============================================================ -->
+<script>
+  // ---------- 1. THE DATA ----------
+  // An array of objects. Each member has a name, an emoji and some replies.
+  // {q} is a placeholder that we swap for the user's question later.
+  var roster = [
+    { name: "Socrates", emoji: "🏺", replies: [
+      "But what do you mean by \"{q}\", my friend?",
+      "Why do you ask \"{q}\"? And why do you think you do not already know?",
+      "I know nothing. Do you know something about \"{q}\"?" ] },
+    { name: "Buddha", emoji: "🧘", replies: [
+      "\"{q}\" is only a ripple. Let it go.",
+      "Suffering comes from asking \"{q}\". Breathe.",
+      "The river does not worry about \"{q}\"." ] },
+    { name: "Sherlock Holmes", emoji: "🔍", replies: [
+      "Elementary. The way you wrote \"{q}\" tells me you slept badly.",
+      "I deduced the answer to \"{q}\" before you finished typing. Pity.",
+      "Watson, the question \"{q}\" is boring. Fetch my violin." ] },
+    { name: "Cleopatra", emoji: "👑", replies: [
+      "\"{q}\"? Bring me tribute and I might answer, subject.",
+      "Rome asked me \"{q}\" once. It did not end well for Rome.",
+      "Your question is beneath me. I shall answer it anyway." ] },
+    { name: "A Pirate Captain", emoji: "🏴‍☠️", replies: [
+      "Arr! \"{q}\"? Bury it and sail away!",
+      "Me crew says \"{q}\" is a job for the plank.",
+      "Shiver me timbers, \"{q}\" be a fine question. Rum first." ] },
+    { name: "A Cat", emoji: "🐈", replies: [
+      "\"{q}\"? Feed me first. Then maybe.",
+      "I pushed your question off the table. Do not ask again.",
+      "Meow. That means no to \"{q}\"." ] },
+    { name: "A Golden Retriever", emoji: "🐕", replies: [
+      "OH WOW \"{q}\"! YES! Everything will be okay!!",
+      "I love you AND your question \"{q}\"! Can we go for a walk?",
+      "Good question! Good human! \"{q}\" is going GREAT!" ] },
+    { name: "Your Dad", emoji: "👨", replies: [
+      "\"{q}\"? Back in my day we just figured it out.",
+      "Have you tried turning \"{q}\" off and on again?",
+      "I am not angry about \"{q}\". Just disappointed." ] },
+    { name: "Crypto Bro", emoji: "📉", replies: [
+      "Bro, \"{q}\" is bullish. Put your savings in.",
+      "\"{q}\"? Buy the dip. Whatever the dip is.",
+      "Not financial advice, but \"{q}\" is going to the moon." ] },
+    { name: "Gym Bro", emoji: "🏋️", replies: [
+      "\"{q}\"? Bro, have you tried lifting?",
+      "Every problem is just a leg day in disguise. Even \"{q}\".",
+      "No days off, bro. Not even for \"{q}\"." ] },
+    { name: "LinkedIn Guru", emoji: "💼", replies: [
+      "I'm humbled to be asked \"{q}\". Here's what it taught me about leadership.",
+      "\"{q}\"? Let's circle back and leverage our synergies.",
+      "Agree? Repost if \"{q}\" changed your life." ] },
+    { name: "Movie Trailer Voice", emoji: "🎬", replies: [
+      "In a world... where someone dared to ask \"{q}\"...",
+      "This summer, \"{q}\" changes everything. Rated PG-13.",
+      "One question. \"{q}\". No second chances." ] }
+  ];
+
+  // The 4 members currently in the chat
+  var squad = [];
+
+  // ---------- 2. FIND THE HTML ELEMENTS ----------
+  var squadBox = document.getElementById("squad");
+  var chatBox = document.getElementById("chat");
+  var hint = document.getElementById("hint");
+  var input = document.getElementById("questionInput");
+  var sendBtn = document.getElementById("sendBtn");
+  var randomBtn = document.getElementById("randomBtn");
+
+  // ---------- 3. SMALL HELPER FUNCTIONS ----------
+
+  // Pick a random whole number from 0 up to (but not including) max
+  function randomNumber(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  // Pick a random item out of any array
+  function pickOne(list) {
+    return list[randomNumber(list.length)];
+  }
+
+  // Choose 4 different members from the roster
+  function chooseSquad() {
+    var copy = roster.slice();       // make a copy so we do not change the roster
+    var chosen = [];
+    for (var i = 0; i < 4; i++) {
+      var index = randomNumber(copy.length);
+      chosen.push(copy[index]);
+      copy.splice(index, 1);         // remove it so it cannot be picked twice
+    }
+    return chosen;
+  }
+
+  // Show the 4 members at the top of the page
+  function showSquad() {
+    squadBox.innerHTML = "";         // clear the old squad
+    for (var i = 0; i < squad.length; i++) {
+      var card = document.createElement("div");
+      card.className = "member slot" + i;
+      card.innerHTML = '<span class="emoji">' + squad[i].emoji + "</span>" + squad[i].name;
+      squadBox.appendChild(card);
+    }
+  }
+
+  // Add one chat bubble. "who" is the name above it, "text" is the message.
+  function addMessage(who, text, colorClass, isMe) {
+    var msg = document.createElement("div");
+    msg.className = isMe ? "msg me" : "msg";
+
+    var nameTag = document.createElement("div");
+    nameTag.className = "name";
+    nameTag.textContent = who;
+
+    var bubble = document.createElement("div");
+    bubble.className = "bubble " + colorClass;
+    bubble.textContent = text;       // textContent is safe: it never runs user text as HTML
+
+    msg.appendChild(nameTag);
+    msg.appendChild(bubble);
+    chatBox.appendChild(msg);
+
+    chatBox.scrollTop = chatBox.scrollHeight;   // scroll to the newest message
+  }
+
+  // ---------- 4. THE MAIN ACTIONS ----------
+
+  // When the user presses Send
+  function sendQuestion() {
+    var question = input.value.trim();
+    if (question === "") {
+      return;                        // nothing typed, so do nothing
+    }
+
+    hint.style.display = "none";
+    addMessage("You", question, "", true);
+    input.value = "";
+
+    // Remove the ? or ! at the end so the replies read nicely
+    var shortQuestion = question.replace(/[?!.]+$/, "");
+
+    // Stop double-sending while the members are replying
+    sendBtn.disabled = true;
+
+    // Each member replies one after another, 1 second apart
+    for (let i = 0; i < squad.length; i++) {
+      setTimeout(function () {
+        var member = squad[i];
+        var reply = pickOne(member.replies);
+        reply = reply.replace(/\{q\}/g, shortQuestion);
+        addMessage(member.emoji + " " + member.name, reply, "slot" + i, false);
+
+        // After the last member, turn Send back on
+        if (i === squad.length - 1) {
+          sendBtn.disabled = false;
+        }
+      }, (i + 1) * 1000);
+    }
+  }
+
+  // When the user presses Randomize
+  function randomizeSquad() {
+    squad = chooseSquad();
+    showSquad();
+  }
+
+  // ---------- 5. CONNECT BUTTONS TO FUNCTIONS ----------
+  sendBtn.addEventListener("click", sendQuestion);
+  randomBtn.addEventListener("click", randomizeSquad);
+  input.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      sendQuestion();
+    }
+  });
+
+  // ---------- 6. START THE APP ----------
+  randomizeSquad();
+</script>
+</body>
+</html>
