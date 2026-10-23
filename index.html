@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Council (Simple)</title>
 
-<!-- ============================================================
-     PART 1: CSS  (how it looks)
-     ============================================================ -->
 <style>
   :root {
     --paper: #F2F0E9;
@@ -21,7 +18,6 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      /* page stays light on purpose: the bubbles are the colourful part */
       --paper: #F2F0E9;
     }
   }
@@ -39,8 +35,7 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* The whole app is one column: header, squad, chat, input */
-  .app {
+     .app {
     width: 100%;
     max-width: 700px;
     height: 100%;
@@ -51,7 +46,6 @@
     background: var(--paper);
   }
 
-  /* Header */
   .header {
     background: var(--c4);
     border-bottom: 4px solid var(--ink);
@@ -60,7 +54,6 @@
   .header h1 { font-size: 1.8rem; font-weight: 900; }
   .header p { font-size: 0.85rem; margin-top: 4px; }
 
-  /* Squad bar: the four members */
   .squad {
     display: flex;
     gap: 8px;
@@ -79,13 +72,11 @@
   }
   .member .emoji { display: block; font-size: 1.6rem; }
 
-  /* Each slot gets its own colour */
   .slot0 { background: var(--c1); }
   .slot1 { background: var(--c2); color: var(--white); }
   .slot2 { background: var(--c3); }
   .slot3 { background: var(--c4); }
 
-  /* Chat area scrolls when there are many messages */
   .chat {
     flex: 1;
     overflow-y: auto;
@@ -109,7 +100,6 @@
   .msg.me .bubble { background: var(--white); }
   .msg.me .name { text-align: right; }
 
-  /* Controls at the bottom */
   .controls {
     border-top: 4px solid var(--ink);
     background: var(--white);
@@ -144,9 +134,6 @@
 </style>
 </head>
 
-<!-- ============================================================
-     PART 2: HTML  (what is on the page)
-     ============================================================ -->
 <body>
   <div class="app">
 
@@ -155,10 +142,8 @@
       <p>Ask one question. Four characters reply. None of them agree.</p>
     </div>
 
-    <!-- JavaScript fills this box with the 4 chosen members -->
     <div class="squad" id="squad"></div>
 
-    <!-- JavaScript adds chat bubbles in here -->
     <div class="chat" id="chat">
       <p class="hint" id="hint">Type a question below and press Send.</p>
     </div>
@@ -173,13 +158,8 @@
 
   </div>
 
-<!-- ============================================================
-     PART 3: JAVASCRIPT  (what it does)
-     ============================================================ -->
 <script>
-  // ---------- 1. THE DATA ----------
-  // An array of objects. Each member has a name, an emoji and some replies.
-  // {q} is a placeholder that we swap for the user's question later.
+ 
   var roster = [
     { name: "Socrates", emoji: "🏺", replies: [
       "But what do you mean by \"{q}\", my friend?",
@@ -231,10 +211,8 @@
       "One question. \"{q}\". No second chances." ] }
   ];
 
-  // The 4 members currently in the chat
   var squad = [];
 
-  // ---------- 2. FIND THE HTML ELEMENTS ----------
   var squadBox = document.getElementById("squad");
   var chatBox = document.getElementById("chat");
   var hint = document.getElementById("hint");
@@ -242,31 +220,26 @@
   var sendBtn = document.getElementById("sendBtn");
   var randomBtn = document.getElementById("randomBtn");
 
-  // ---------- 3. SMALL HELPER FUNCTIONS ----------
 
-  // Pick a random whole number from 0 up to (but not including) max
   function randomNumber(max) {
     return Math.floor(Math.random() * max);
   }
 
-  // Pick a random item out of any array
   function pickOne(list) {
     return list[randomNumber(list.length)];
   }
 
-  // Choose 4 different members from the roster
   function chooseSquad() {
-    var copy = roster.slice();       // make a copy so we do not change the roster
+    var copy = roster.slice();       
     var chosen = [];
     for (var i = 0; i < 4; i++) {
       var index = randomNumber(copy.length);
       chosen.push(copy[index]);
-      copy.splice(index, 1);         // remove it so it cannot be picked twice
+      copy.splice(index, 1);         
     }
     return chosen;
   }
 
-  // Show the 4 members at the top of the page
   function showSquad() {
     squadBox.innerHTML = "";         // clear the old squad
     for (var i = 0; i < squad.length; i++) {
@@ -277,7 +250,6 @@
     }
   }
 
-  // Add one chat bubble. "who" is the name above it, "text" is the message.
   function addMessage(who, text, colorClass, isMe) {
     var msg = document.createElement("div");
     msg.className = isMe ? "msg me" : "msg";
@@ -288,35 +260,30 @@
 
     var bubble = document.createElement("div");
     bubble.className = "bubble " + colorClass;
-    bubble.textContent = text;       // textContent is safe: it never runs user text as HTML
+    bubble.textContent = text;      L
 
     msg.appendChild(nameTag);
     msg.appendChild(bubble);
     chatBox.appendChild(msg);
 
-    chatBox.scrollTop = chatBox.scrollHeight;   // scroll to the newest message
+    chatBox.scrollTop = chatBox.scrollHeight;   
   }
 
-  // ---------- 4. THE MAIN ACTIONS ----------
 
-  // When the user presses Send
   function sendQuestion() {
     var question = input.value.trim();
     if (question === "") {
-      return;                        // nothing typed, so do nothing
+      return;                      
     }
 
     hint.style.display = "none";
     addMessage("You", question, "", true);
     input.value = "";
 
-    // Remove the ? or ! at the end so the replies read nicely
     var shortQuestion = question.replace(/[?!.]+$/, "");
 
-    // Stop double-sending while the members are replying
     sendBtn.disabled = true;
 
-    // Each member replies one after another, 1 second apart
     for (let i = 0; i < squad.length; i++) {
       setTimeout(function () {
         var member = squad[i];
@@ -324,7 +291,6 @@
         reply = reply.replace(/\{q\}/g, shortQuestion);
         addMessage(member.emoji + " " + member.name, reply, "slot" + i, false);
 
-        // After the last member, turn Send back on
         if (i === squad.length - 1) {
           sendBtn.disabled = false;
         }
@@ -332,13 +298,11 @@
     }
   }
 
-  // When the user presses Randomize
   function randomizeSquad() {
     squad = chooseSquad();
     showSquad();
   }
 
-  // ---------- 5. CONNECT BUTTONS TO FUNCTIONS ----------
   sendBtn.addEventListener("click", sendQuestion);
   randomBtn.addEventListener("click", randomizeSquad);
   input.addEventListener("keydown", function (event) {
@@ -346,8 +310,6 @@
       sendQuestion();
     }
   });
-
-  // ---------- 6. START THE APP ----------
   randomizeSquad();
 </script>
 </body>
